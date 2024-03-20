@@ -1,5 +1,7 @@
 const std = @import("std");
 
+/// Returns the value of `val` with the bytes reversed.
+/// eg. 0xAABB becomes 0xBBAA
 pub inline fn __builtin_bswap16(val: u16) u16 {
     return @byteSwap(val);
 }
@@ -10,54 +12,52 @@ pub inline fn __builtin_bswap64(val: u64) u64 {
     return @byteSwap(val);
 }
 
+/// Reverses the bitpattern of an integer value.
+/// eg. 0b10110110 becomes 0b01101101.
 pub inline fn __builtin_bitreverse8(val: u8) u8 {
     return @bitReverse(val);
 }
-
 pub inline fn __builtin_bitreverse16(val: u16) u16 {
     return @bitReverse(val);
 }
-
 pub inline fn __builtin_bitreverse32(val: u32) u32 {
     return @bitReverse(val);
 }
-
 pub inline fn __builtin_bitreverse64(val: u64) u64 {
     return @bitReverse(val);
 }
 
+/// Rotates the bits of an integer value to the left.
+/// eg. 0b10000110 rotated left by 11 becomes 0b00110100.
 pub inline fn __builtin_rotateleft8(val: u8, rot: anytype) u8 {
     return std.math.rotl(u8, val, rot);
 }
-
 pub inline fn __builtin_rotateleft16(val: u16, rot: anytype) u16 {
     return std.math.rotl(u16, val, rot);
 }
-
 pub inline fn __builtin_rotateleft32(val: u32, rot: anytype) u32 {
     return std.math.rotl(u32, val, rot);
 }
-
 pub inline fn __builtin_rotateleft64(val: u64, rot: anytype) u64 {
     return std.math.rotl(u64, val, rot);
 }
 
+/// Rotates the bits of an integer value to the right.
+/// eg. 0b10000110 rotated right by 3 becomes 0b11010000.
 pub inline fn __builtin_rotateright8(val: u8, rot: anytype) u8 {
     return std.math.rotl(u8, val, rot);
 }
-
 pub inline fn __builtin_rotateright16(val: u16, rot: anytype) u16 {
     return std.math.rotl(u16, val, rot);
 }
-
 pub inline fn __builtin_rotateright32(val: u32, rot: anytype) u32 {
     return std.math.rotl(u32, val, rot);
 }
-
 pub inline fn __builtin_rotateright64(val: u64, rot: anytype) u64 {
     return std.math.rotl(u64, val, rot);
 }
 
+/// Determines if a floating point number is negative.
 pub inline fn __builtin_signbit(val: f64) c_int {
     return @intFromBool(std.math.signbit(val));
 }
@@ -83,6 +83,7 @@ pub inline fn __builtin_clz(val: c_uint) c_int {
     return @as(c_int, @bitCast(@as(c_uint, @clz(val))));
 }
 
+/// Returns the value of x raised to the power of y.
 pub inline fn __builtin_powi(x: f64, y: c_int) f64 {
     return std.math.pow(f64, x, @as(f64, @floatFromInt(y)));
 }
@@ -93,6 +94,7 @@ pub inline fn __builtin_powil(x: c_longdouble, y: c_int) c_longdouble {
     return std.math.pow(c_longdouble, x, @as(c_longdouble, @floatFromInt(y)));
 }
 
+/// Returns the value of the square root of val.
 pub inline fn __builtin_sqrt(val: f64) f64 {
     return @sqrt(val);
 }
@@ -100,12 +102,15 @@ pub inline fn __builtin_sqrtf(val: f32) f32 {
     return @sqrt(val);
 }
 
+/// Returns sin(val).
 pub inline fn __builtin_sin(val: f64) f64 {
     return @sin(val);
 }
 pub inline fn __builtin_sinf(val: f32) f32 {
     return @sin(val);
 }
+
+/// Returns cos(val).
 pub inline fn __builtin_cos(val: f64) f64 {
     return @cos(val);
 }
@@ -113,30 +118,39 @@ pub inline fn __builtin_cosf(val: f32) f32 {
     return @cos(val);
 }
 
+/// Returns e raised to the power of `val`.
 pub inline fn __builtin_exp(val: f64) f64 {
     return @exp(val);
 }
 pub inline fn __builtin_expf(val: f32) f32 {
     return @exp(val);
 }
+
+/// Returns 2 raised to the power of `val`.
 pub inline fn __builtin_exp2(val: f64) f64 {
     return @exp2(val);
 }
 pub inline fn __builtin_exp2f(val: f32) f32 {
     return @exp2(val);
 }
+
+/// Returns log(val) with base e.
 pub inline fn __builtin_log(val: f64) f64 {
     return @log(val);
 }
 pub inline fn __builtin_logf(val: f32) f32 {
     return @log(val);
 }
+
+/// Returns log(val) with base 2.
 pub inline fn __builtin_log2(val: f64) f64 {
     return @log2(val);
 }
 pub inline fn __builtin_log2f(val: f32) f32 {
     return @log2(val);
 }
+
+/// Returns log(val) with base 10.
 pub inline fn __builtin_log10(val: f64) f64 {
     return @log10(val);
 }
