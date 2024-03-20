@@ -83,6 +83,16 @@ pub inline fn __builtin_clz(val: c_uint) c_int {
     return @as(c_int, @bitCast(@as(c_uint, @clz(val))));
 }
 
+pub inline fn __builtin_powi(x: f64, y: c_int) f64 {
+    return std.math.pow(f64, x, @as(f64, @floatFromInt(y)));
+}
+pub inline fn __builtin_powif(x: f32, y: c_int) f32 {
+    return std.math.pow(f32, x, @as(f32, @floatFromInt(y)));
+}
+pub inline fn __builtin_powil(x: c_longdouble, y: c_int) c_longdouble {
+    return std.math.pow(c_longdouble, x, @as(c_longdouble, @floatFromInt(y)));
+}
+
 pub inline fn __builtin_sqrt(val: f64) f64 {
     return @sqrt(val);
 }
@@ -306,6 +316,18 @@ pub inline fn __builtin_unreachable() noreturn {
 pub inline fn __builtin_constant_p(expr: anytype) c_int {
     _ = expr;
     return @intFromBool(false);
+}
+
+pub fn __builtin_add_overflow(a: anytype, b: anytype, result: *@TypeOf(a, b)) c_int {
+    const res = @addWithOverflow(a, b);
+    result.* = res[0];
+    return res[1];
+}
+
+pub fn __builtin_sub_overflow(a: anytype, b: anytype, result: *@TypeOf(a, b)) c_int {
+    const res = @subWithOverflow(a, b);
+    result.* = res[0];
+    return res[1];
 }
 
 pub fn __builtin_mul_overflow(a: anytype, b: anytype, result: *@TypeOf(a, b)) c_int {
