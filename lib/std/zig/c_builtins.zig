@@ -10,6 +10,54 @@ pub inline fn __builtin_bswap64(val: u64) u64 {
     return @byteSwap(val);
 }
 
+pub inline fn __builtin_bitreverse8(val: u8) u8 {
+    return @bitReverse(val);
+}
+
+pub inline fn __builtin_bitreverse16(val: u16) u16 {
+    return @bitReverse(val);
+}
+
+pub inline fn __builtin_bitreverse32(val: u32) u32 {
+    return @bitReverse(val);
+}
+
+pub inline fn __builtin_bitreverse64(val: u64) u64 {
+    return @bitReverse(val);
+}
+
+pub inline fn __builtin_rotateleft8(val: u8, rot: anytype) u8 {
+    return std.math.rotl(u8, val, rot);
+}
+
+pub inline fn __builtin_rotateleft16(val: u16, rot: anytype) u16 {
+    return std.math.rotl(u16, val, rot);
+}
+
+pub inline fn __builtin_rotateleft32(val: u32, rot: anytype) u32 {
+    return std.math.rotl(u32, val, rot);
+}
+
+pub inline fn __builtin_rotateleft64(val: u64, rot: anytype) u64 {
+    return std.math.rotl(u64, val, rot);
+}
+
+pub inline fn __builtin_rotateright8(val: u8, rot: anytype) u8 {
+    return std.math.rotl(u8, val, rot);
+}
+
+pub inline fn __builtin_rotateright16(val: u16, rot: anytype) u16 {
+    return std.math.rotl(u16, val, rot);
+}
+
+pub inline fn __builtin_rotateright32(val: u32, rot: anytype) u32 {
+    return std.math.rotl(u32, val, rot);
+}
+
+pub inline fn __builtin_rotateright64(val: u64, rot: anytype) u64 {
+    return std.math.rotl(u64, val, rot);
+}
+
 pub inline fn __builtin_signbit(val: f64) c_int {
     return @intFromBool(std.math.signbit(val));
 }
@@ -247,6 +295,10 @@ pub inline fn __builtin_assume(cond: bool) void {
     if (!cond) unreachable;
 }
 
+pub inline fn __builtin_assume_separate_storage(ptr1: anytype, ptr2: anytype) void {
+    if (@intFromPtr(ptr1) == @intFromPtr(ptr2)) unreachable;
+}
+
 pub inline fn __builtin_unreachable() noreturn {
     unreachable;
 }
@@ -255,6 +307,7 @@ pub inline fn __builtin_constant_p(expr: anytype) c_int {
     _ = expr;
     return @intFromBool(false);
 }
+
 pub fn __builtin_mul_overflow(a: anytype, b: anytype, result: *@TypeOf(a, b)) c_int {
     const res = @mulWithOverflow(a, b);
     result.* = res[0];
