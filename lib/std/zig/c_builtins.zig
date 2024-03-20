@@ -309,6 +309,15 @@ pub inline fn __builtin_assume_separate_storage(ptr1: anytype, ptr2: anytype) vo
     if (@intFromPtr(ptr1) == @intFromPtr(ptr2)) unreachable;
 }
 
+pub inline fn __builtin_trap() noreturn {
+    @trap();
+}
+
+pub inline fn __builtin_debugtrap() void {
+    @breakpoint();
+    return;
+}
+
 pub inline fn __builtin_unreachable() noreturn {
     unreachable;
 }
