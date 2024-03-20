@@ -253,6 +253,12 @@ pub inline fn __builtin_expect(expr: c_long, c: c_long) c_long {
     return expr;
 }
 
+pub inline fn __builtin_expect_with_probability(expr: c_long, c: c_long, probability: f64) c_long {
+    _ = c;
+    _ = probability;
+    return expr;
+}
+
 /// returns a quiet NaN. Quiet NaNs have many representations; tagp is used to select one in an
 /// implementation-defined way.
 /// This implementation is based on the description for __builtin_nan provided in the GCC docs at
