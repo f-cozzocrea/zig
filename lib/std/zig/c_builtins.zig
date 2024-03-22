@@ -368,32 +368,32 @@ pub fn __builtin_add_overflow(a: anytype, b: anytype, result: *@TypeOf(a, b)) c_
     result.* = res[0];
     return res[1];
 }
-pub fn __builtin_uadd_overflow(a: anytype, b: anytype, result: *@TypeOf(a, b)) c_int {
+pub fn __builtin_uadd_overflow(a: c_uint, b: c_uint, result: *c_uint) c_int {
     const res = @addWithOverflow(a, b);
     result.* = res[0];
     return res[1];
 }
-pub fn __builtin_uaddl_overflow(a: anytype, b: anytype, result: *@TypeOf(a, b)) c_int {
+pub fn __builtin_uaddl_overflow(a: c_ulong, b: c_ulong, result: *c_ulong) c_int {
     const res = @addWithOverflow(a, b);
     result.* = res[0];
     return res[1];
 }
-pub fn __builtin_uaddll_overflow(a: anytype, b: anytype, result: *@TypeOf(a, b)) c_int {
+pub fn __builtin_uaddll_overflow(a: c_ulonglong, b: c_ulonglong, result: *c_ulonglong) c_int {
     const res = @addWithOverflow(a, b);
     result.* = res[0];
     return res[1];
 }
-pub fn __builtin_sadd_overflow(a: anytype, b: anytype, result: *@TypeOf(a, b)) c_int {
+pub fn __builtin_sadd_overflow(a: c_int, b: c_int, result: *c_int) c_int {
     const res = @addWithOverflow(a, b);
     result.* = res[0];
     return res[1];
 }
-pub fn __builtin_saddl_overflow(a: anytype, b: anytype, result: *@TypeOf(a, b)) c_int {
+pub fn __builtin_saddl_overflow(a: c_long, b: c_long, result: *c_long) c_int {
     const res = @addWithOverflow(a, b);
     result.* = res[0];
     return res[1];
 }
-pub fn __builtin_saddll_overflow(a: anytype, b: anytype, result: *@TypeOf(a, b)) c_int {
+pub fn __builtin_saddll_overflow(a: c_longlong, b: c_longlong, result: *c_longlong) c_int {
     const res = @addWithOverflow(a, b);
     result.* = res[0];
     return res[1];
@@ -404,32 +404,32 @@ pub fn __builtin_sub_overflow(a: anytype, b: anytype, result: *@TypeOf(a, b)) c_
     result.* = res[0];
     return res[1];
 }
-pub fn __builtin_usub_overflow(a: anytype, b: anytype, result: *@TypeOf(a, b)) c_int {
+pub fn __builtin_usub_overflow(a: c_uint, b: c_uint, result: *c_uint) c_int {
     const res = @subWithOverflow(a, b);
     result.* = res[0];
     return res[1];
 }
-pub fn __builtin_usubl_overflow(a: anytype, b: anytype, result: *@TypeOf(a, b)) c_int {
+pub fn __builtin_usubl_overflow(a: c_ulong, b: c_ulong, result: *c_ulong) c_int {
     const res = @subWithOverflow(a, b);
     result.* = res[0];
     return res[1];
 }
-pub fn __builtin_usubll_overflow(a: anytype, b: anytype, result: *@TypeOf(a, b)) c_int {
+pub fn __builtin_usubll_overflow(a: c_ulonglong, b: c_ulonglong, result: *c_ulonglong) c_int {
     const res = @subWithOverflow(a, b);
     result.* = res[0];
     return res[1];
 }
-pub fn __builtin_ssub_overflow(a: anytype, b: anytype, result: *@TypeOf(a, b)) c_int {
+pub fn __builtin_ssub_overflow(a: c_int, b: c_int, result: *c_int) c_int {
     const res = @subWithOverflow(a, b);
     result.* = res[0];
     return res[1];
 }
-pub fn __builtin_ssubl_overflow(a: anytype, b: anytype, result: *@TypeOf(a, b)) c_int {
+pub fn __builtin_ssubl_overflow(a: c_long, b: c_long, result: *c_long) c_int {
     const res = @subWithOverflow(a, b);
     result.* = res[0];
     return res[1];
 }
-pub fn __builtin_ssubll_overflow(a: anytype, b: anytype, result: *@TypeOf(a, b)) c_int {
+pub fn __builtin_ssubll_overflow(a: c_longlong, b: c_longlong, result: *c_longlong) c_int {
     const res = @subWithOverflow(a, b);
     result.* = res[0];
     return res[1];
@@ -440,32 +440,32 @@ pub fn __builtin_mul_overflow(a: anytype, b: anytype, result: *@TypeOf(a, b)) c_
     result.* = res[0];
     return res[1];
 }
-pub fn __builtin_umul_overflow(a: anytype, b: anytype, result: *@TypeOf(a, b)) c_int {
+pub fn __builtin_umul_overflow(a: c_uint, b: c_uint, result: *c_uint) c_int {
     const res = @mulWithOverflow(a, b);
     result.* = res[0];
     return res[1];
 }
-pub fn __builtin_umull_overflow(a: anytype, b: anytype, result: *@TypeOf(a, b)) c_int {
+pub fn __builtin_umull_overflow(a: c_ulong, b: c_ulong, result: *c_ulong) c_int {
     const res = @mulWithOverflow(a, b);
     result.* = res[0];
     return res[1];
 }
-pub fn __builtin_umulll_overflow(a: anytype, b: anytype, result: *@TypeOf(a, b)) c_int {
+pub fn __builtin_umulll_overflow(a: c_ulonglong, b: c_ulonglong, result: *c_ulonglong) c_int {
     const res = @mulWithOverflow(a, b);
     result.* = res[0];
     return res[1];
 }
-pub fn __builtin_smul_overflow(a: anytype, b: anytype, result: *@TypeOf(a, b)) c_int {
+pub fn __builtin_smul_overflow(a: c_int, b: c_int, result: *c_int) c_int {
     const res = @mulWithOverflow(a, b);
     result.* = res[0];
     return res[1];
 }
-pub fn __builtin_smull_overflow(a: anytype, b: anytype, result: *@TypeOf(a, b)) c_int {
+pub fn __builtin_smull_overflow(a: c_long, b: c_long, result: *c_long) c_int {
     const res = @mulWithOverflow(a, b);
     result.* = res[0];
     return res[1];
 }
-pub fn __builtin_smulll_overflow(a: anytype, b: anytype, result: *@TypeOf(a, b)) c_int {
+pub fn __builtin_smulll_overflow(a: c_longlong, b: c_longlong, result: *c_longlong) c_int {
     const res = @mulWithOverflow(a, b);
     result.* = res[0];
     return res[1];
