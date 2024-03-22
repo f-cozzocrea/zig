@@ -68,19 +68,22 @@ pub inline fn __builtin_signbitf(val: f32) c_int {
     return @intFromBool(std.math.signbit(val));
 }
 
+/// "population count" of bits set in an integer
 pub inline fn __builtin_popcount(val: c_uint) c_int {
     // popcount of a c_uint will never exceed the capacity of a c_int
     @setRuntimeSafety(false);
     return @as(c_int, @bitCast(@as(c_uint, @popCount(val))));
 }
+
+/// Returns the number of trailing 0-bits in val, starting at the least significant bit position.
 pub inline fn __builtin_ctz(val: c_uint) c_int {
-    // Returns the number of trailing 0-bits in val, starting at the least significant bit position.
     // In C if `val` is 0, the result is undefined; in zig it's the number of bits in a c_uint
     @setRuntimeSafety(false);
     return @as(c_int, @bitCast(@as(c_uint, @ctz(val))));
 }
+
+/// Returns the number of leading 0-bits in x, starting at the most significant bit position.
 pub inline fn __builtin_clz(val: c_uint) c_int {
-    // Returns the number of leading 0-bits in x, starting at the most significant bit position.
     // In C if `val` is 0, the result is undefined; in zig it's the number of bits in a c_uint
     @setRuntimeSafety(false);
     return @as(c_int, @bitCast(@as(c_uint, @clz(val))));
@@ -206,9 +209,12 @@ pub inline fn __builtin_roundf(val: f32) f32 {
     return @round(val);
 }
 
+/// Builtin function backing `strlen()` C library function.
 pub inline fn __builtin_strlen(s: [*c]const u8) usize {
     return std.mem.sliceTo(s, 0).len;
 }
+
+/// Builtin function backing the `strcmp()` C library function.
 pub inline fn __builtin_strcmp(s1: [*c]const u8, s2: [*c]const u8) c_int {
     return switch (std.mem.orderZ(u8, s1, s2)) {
         .lt => -1,
@@ -217,12 +223,12 @@ pub inline fn __builtin_strcmp(s1: [*c]const u8, s2: [*c]const u8) c_int {
     };
 }
 
+/// clang semantics match gcc's: https://gcc.gnu.org/onlinedocs/gcc/Object-Size-Checking.html
+/// If it is not possible to determine which objects ptr points to at compile time,
+/// __builtin_object_size should return (size_t) -1 for type 0 or 1 and (size_t) 0
+/// for type 2 or 3.
 pub inline fn __builtin_object_size(ptr: ?*const anyopaque, ty: c_int) usize {
     _ = ptr;
-    // clang semantics match gcc's: https://gcc.gnu.org/onlinedocs/gcc/Object-Size-Checking.html
-    // If it is not possible to determine which objects ptr points to at compile time,
-    // __builtin_object_size should return (size_t) -1 for type 0 or 1 and (size_t) 0
-    // for type 2 or 3.
     if (ty == 0 or ty == 1) return @as(usize, @bitCast(-@as(isize, 1)));
     if (ty == 2 or ty == 3) return 0;
     unreachable;
@@ -238,6 +244,7 @@ pub inline fn __builtin___memset_chk(
     return __builtin_memset(dst, val, len);
 }
 
+/// Builtin function backing the `memset()` C library function.
 pub inline fn __builtin_memset(dst: ?*anyopaque, val: c_int, len: usize) ?*anyopaque {
     const dst_cast = @as([*c]u8, @ptrCast(dst));
     @memset(dst_cast[0..len], @as(u8, @bitCast(@as(i8, @truncate(val)))));
@@ -254,6 +261,7 @@ pub inline fn __builtin___memcpy_chk(
     return __builtin_memcpy(dst, src, len);
 }
 
+/// Builtin function backing the `memcpy()` C library function.
 pub inline fn __builtin_memcpy(
     noalias dst: ?*anyopaque,
     noalias src: ?*const anyopaque,
@@ -273,6 +281,8 @@ pub inline fn __builtin_expect(expr: c_long, c: c_long) c_long {
     return expr;
 }
 
+/// Like `__builtin_expect()`, but with the option to pass a probability as a hint to the
+/// compiler. Here it is unused.
 pub inline fn __builtin_expect_with_probability(expr: c_long, c: c_long, probability: f64) c_long {
     _ = c;
     _ = probability;
@@ -358,14 +368,104 @@ pub fn __builtin_add_overflow(a: anytype, b: anytype, result: *@TypeOf(a, b)) c_
     result.* = res[0];
     return res[1];
 }
+pub fn __builtin_uadd_overflow(a: anytype, b: anytype, result: *@TypeOf(a, b)) c_int {
+    const res = @addWithOverflow(a, b);
+    result.* = res[0];
+    return res[1];
+}
+pub fn __builtin_uaddl_overflow(a: anytype, b: anytype, result: *@TypeOf(a, b)) c_int {
+    const res = @addWithOverflow(a, b);
+    result.* = res[0];
+    return res[1];
+}
+pub fn __builtin_uaddll_overflow(a: anytype, b: anytype, result: *@TypeOf(a, b)) c_int {
+    const res = @addWithOverflow(a, b);
+    result.* = res[0];
+    return res[1];
+}
+pub fn __builtin_sadd_overflow(a: anytype, b: anytype, result: *@TypeOf(a, b)) c_int {
+    const res = @addWithOverflow(a, b);
+    result.* = res[0];
+    return res[1];
+}
+pub fn __builtin_saddl_overflow(a: anytype, b: anytype, result: *@TypeOf(a, b)) c_int {
+    const res = @addWithOverflow(a, b);
+    result.* = res[0];
+    return res[1];
+}
+pub fn __builtin_saddll_overflow(a: anytype, b: anytype, result: *@TypeOf(a, b)) c_int {
+    const res = @addWithOverflow(a, b);
+    result.* = res[0];
+    return res[1];
+}
 
 pub fn __builtin_sub_overflow(a: anytype, b: anytype, result: *@TypeOf(a, b)) c_int {
     const res = @subWithOverflow(a, b);
     result.* = res[0];
     return res[1];
 }
+pub fn __builtin_usub_overflow(a: anytype, b: anytype, result: *@TypeOf(a, b)) c_int {
+    const res = @subWithOverflow(a, b);
+    result.* = res[0];
+    return res[1];
+}
+pub fn __builtin_usubl_overflow(a: anytype, b: anytype, result: *@TypeOf(a, b)) c_int {
+    const res = @subWithOverflow(a, b);
+    result.* = res[0];
+    return res[1];
+}
+pub fn __builtin_usubll_overflow(a: anytype, b: anytype, result: *@TypeOf(a, b)) c_int {
+    const res = @subWithOverflow(a, b);
+    result.* = res[0];
+    return res[1];
+}
+pub fn __builtin_ssub_overflow(a: anytype, b: anytype, result: *@TypeOf(a, b)) c_int {
+    const res = @subWithOverflow(a, b);
+    result.* = res[0];
+    return res[1];
+}
+pub fn __builtin_ssubl_overflow(a: anytype, b: anytype, result: *@TypeOf(a, b)) c_int {
+    const res = @subWithOverflow(a, b);
+    result.* = res[0];
+    return res[1];
+}
+pub fn __builtin_ssubll_overflow(a: anytype, b: anytype, result: *@TypeOf(a, b)) c_int {
+    const res = @subWithOverflow(a, b);
+    result.* = res[0];
+    return res[1];
+}
 
 pub fn __builtin_mul_overflow(a: anytype, b: anytype, result: *@TypeOf(a, b)) c_int {
+    const res = @mulWithOverflow(a, b);
+    result.* = res[0];
+    return res[1];
+}
+pub fn __builtin_umul_overflow(a: anytype, b: anytype, result: *@TypeOf(a, b)) c_int {
+    const res = @mulWithOverflow(a, b);
+    result.* = res[0];
+    return res[1];
+}
+pub fn __builtin_umull_overflow(a: anytype, b: anytype, result: *@TypeOf(a, b)) c_int {
+    const res = @mulWithOverflow(a, b);
+    result.* = res[0];
+    return res[1];
+}
+pub fn __builtin_umulll_overflow(a: anytype, b: anytype, result: *@TypeOf(a, b)) c_int {
+    const res = @mulWithOverflow(a, b);
+    result.* = res[0];
+    return res[1];
+}
+pub fn __builtin_smul_overflow(a: anytype, b: anytype, result: *@TypeOf(a, b)) c_int {
+    const res = @mulWithOverflow(a, b);
+    result.* = res[0];
+    return res[1];
+}
+pub fn __builtin_smull_overflow(a: anytype, b: anytype, result: *@TypeOf(a, b)) c_int {
+    const res = @mulWithOverflow(a, b);
+    result.* = res[0];
+    return res[1];
+}
+pub fn __builtin_smulll_overflow(a: anytype, b: anytype, result: *@TypeOf(a, b)) c_int {
     const res = @mulWithOverflow(a, b);
     result.* = res[0];
     return res[1];
