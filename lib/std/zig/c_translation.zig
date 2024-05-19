@@ -309,6 +309,15 @@ test "promoteIntLiteral" {
     }
 }
 
+pub fn convertVector(src_vec: anytype, dst_vec_type: type) dst_vec_type {
+    const dst_vec_info = @typeInfo(dst_vec_type).Vector;
+    var result: dst_vec_type = undefined;
+    for (0..dst_vec_info.len) |i| {
+        result[i] = cast(dst_vec_info.child, src_vec[i]);
+    }
+    return result;
+}
+
 /// Convert from clang __builtin_shufflevector index to Zig @shuffle index
 /// clang requires __builtin_shufflevector index arguments to be integer constants.
 /// negative values for `this_index` indicate "don't care".

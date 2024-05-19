@@ -1243,58 +1243,63 @@ fn transConvertVectorExpr(
 ) TransError!Node {
     const base_stmt = @as(*const clang.Stmt, @ptrCast(expr));
 
-    var block_scope = try Scope.Block.init(c, scope, true);
-    defer block_scope.deinit();
+    //var block_scope = try Scope.Block.init(c, scope, true);
+    //defer block_scope.deinit();
 
     const src_expr = expr.getSrcExpr();
-    const src_type = qualTypeCanon(src_expr.getType());
-    const src_vector_ty = @as(*const clang.VectorType, @ptrCast(src_type));
-    const src_element_qt = src_vector_ty.getElementType();
+    //const src_type = qualTypeCanon(src_expr.getType());
+    //const src_vector_ty = @as(*const clang.VectorType, @ptrCast(src_type));
+    //const src_element_qt = src_vector_ty.getElementType();
 
-    const src_expr_node = try transExpr(c, &block_scope.base, src_expr, .used);
+    const src_expr_node = try transExpr(c, scope, src_expr, .used);
 
     const dst_qt = expr.getTypeSourceInfo_getType();
-    const dst_type_node = try transQualType(c, &block_scope.base, dst_qt, base_stmt.getBeginLoc());
-    const dst_vector_ty = @as(*const clang.VectorType, @ptrCast(qualTypeCanon(dst_qt)));
-    const num_elements = dst_vector_ty.getNumElements();
-    const dst_element_qt = dst_vector_ty.getElementType();
+    const dst_type_node = try transQualType(c, scope, dst_qt, base_stmt.getBeginLoc());
+    return Tag.helpers_convert_vector.create(c.arena, .{
+        .lhs = src_expr_node,
+        .rhs = dst_type_node,
+    });
+
+    //const dst_vector_ty = @as(*const clang.VectorType, @ptrCast(qualTypeCanon(dst_qt)));
+    //const num_elements = dst_vector_ty.getNumElements();
+    //const dst_element_qt = dst_vector_ty.getElementType();
 
     // workaround for https://github.com/ziglang/zig/issues/8322
     // we store the casted results into temp variables and use those
     // to initialize the vector. Eventually we can just directly
     // construct the init_list from casted source members
-    var i: usize = 0;
-    while (i < num_elements) : (i += 1) {
-        const mangled_name = try block_scope.makeMangledName(c, "tmp");
-        const value = try Tag.array_access.create(c.arena, .{
-            .lhs = src_expr_node,
-            .rhs = try transCreateNodeNumber(c, i, .int),
-        });
-        const tmp_decl_node = try Tag.var_simple.create(c.arena, .{
-            .name = mangled_name,
-            .init = try transCCast(c, &block_scope.base, base_stmt.getBeginLoc(), dst_element_qt, src_element_qt, value),
-        });
-        try block_scope.statements.append(tmp_decl_node);
-    }
+    //var i: usize = 0;
+    //while (i < num_elements) : (i += 1) {
+    //    const mangled_name = try block_scope.makeMangledName(c, "tmp");
+    //    const value = try Tag.array_access.create(c.arena, .{
+    //        .lhs = src_expr_node,
+    //        .rhs = try transCreateNodeNumber(c, i, .int),
+    //    });
+    //    const tmp_decl_node = try Tag.var_simple.create(c.arena, .{
+    //        .name = mangled_name,
+    //        .init = try transCCast(c, &block_scope.base, base_stmt.getBeginLoc(), dst_element_qt, src_element_qt, value),
+    //    });
+    //    try block_scope.statements.append(tmp_decl_node);
+    //}
 
-    const init_list = try c.arena.alloc(Node, num_elements);
-    for (init_list, 0..) |*init, init_index| {
-        const tmp_decl = block_scope.statements.items[init_index];
-        const name = tmp_decl.castTag(.var_simple).?.data.name;
-        init.* = try Tag.identifier.create(c.arena, name);
-    }
+    //const init_list = try c.arena.alloc(Node, num_elements);
+    //for (init_list, 0..) |*init, init_index| {
+    //    const tmp_decl = block_scope.statements.items[init_index];
+    //    const name = tmp_decl.castTag(.var_simple).?.data.name;
+    //    init.* = try Tag.identifier.create(c.arena, name);
+    //}
 
-    const vec_init = try Tag.array_init.create(c.arena, .{
-        .cond = dst_type_node,
-        .cases = init_list,
-    });
+    //const vec_init = try Tag.array_init.create(c.arena, .{
+    //    .cond = dst_type_node,
+    //    .cases = init_list,
+    //});
 
-    const break_node = try Tag.break_val.create(c.arena, .{
-        .label = block_scope.label,
-        .val = vec_init,
-    });
-    try block_scope.statements.append(break_node);
-    return block_scope.complete(c);
+    //const break_node = try Tag.break_val.create(c.arena, .{
+    //    .label = block_scope.label,
+    //    .val = vec_init,
+    //});
+    //try block_scope.statements.append(break_node);
+    //return block_scope.complete(c);
 }
 
 fn makeShuffleMask(c: *Context, scope: *Scope, expr: *const clang.ShuffleVectorExpr, vector_len: Node) TransError!Node {

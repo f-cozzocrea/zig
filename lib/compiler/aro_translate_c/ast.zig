@@ -194,6 +194,8 @@ pub const Node = extern union {
         helpers_sizeof,
         /// @import("std").zig.c_translation.FlexibleArrayType(lhs, rhs)
         helpers_flexible_array_type,
+        /// @import("std").zig.c_translation.convertVector(src_vec, dst_vec_type)
+        helpers_convert_vector,
         /// @import("std").zig.c_translation.shuffleVectorIndex(lhs, rhs)
         helpers_shuffle_vector_index,
         /// @import("std").zig.c_translation.Macro.<operand>
@@ -329,6 +331,7 @@ pub const Node = extern union {
                 .array_access,
                 .std_mem_zeroinit,
                 .helpers_flexible_array_type,
+                .helpers_convert_vector,
                 .helpers_shuffle_vector_index,
                 .vector,
                 .div_exact,
@@ -907,6 +910,11 @@ fn renderNode(c: *Context, node: Node) Allocator.Error!NodeIndex {
         .helpers_flexible_array_type => {
             const payload = node.castTag(.helpers_flexible_array_type).?.data;
             const import_node = try renderStdImport(c, &.{ "zig", "c_translation", "FlexibleArrayType" });
+            return renderCall(c, import_node, &.{ payload.lhs, payload.rhs });
+        },
+        .helpers_convert_vector => {
+            const payload = node.castTag(.helpers_convert_vector).?.data;
+            const import_node = try renderStdImport(c, &.{ "zig", "c_translation", "convertVector" });
             return renderCall(c, import_node, &.{ payload.lhs, payload.rhs });
         },
         .helpers_shuffle_vector_index => {
@@ -2352,6 +2360,7 @@ fn renderNodeGrouped(c: *Context, node: Node) !NodeIndex {
         .helpers_sizeof,
         .helpers_cast,
         .helpers_promoteIntLiteral,
+        .helpers_convert_vector,
         .helpers_shuffle_vector_index,
         .helpers_flexible_array_type,
         .std_mem_zeroinit,
