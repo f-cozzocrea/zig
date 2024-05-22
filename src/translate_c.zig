@@ -2540,6 +2540,15 @@ fn transInitListExprRecord(
 
         var init_expr = try transExpr(c, scope, elem_expr, .used);
         const field_qt = field_decl.getType();
+
+        // Clang does not recognize a boolean expression used to
+        // initialize a non-boolean record field as an implicit cast,
+        // so we check for that here.
+        if (!qualTypeIsBoolean(field_qt) and isBoolRes(init_expr)) {
+            const init_expr_qt = getExprQualType(init_expr);
+            init_expr = try transCCast(c, scope, loc, field_qt, init_expr_qt, init_expr);
+        }
+
         if (init_expr.tag() == .string_literal and qualTypeIsCharStar(field_qt)) {
             if (scope.id == .root) {
                 init_expr = try stringLiteralToCharStar(c, init_expr);
