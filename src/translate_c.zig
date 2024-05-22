@@ -2545,8 +2545,8 @@ fn transInitListExprRecord(
         // initialize a non-boolean record field as an implicit cast,
         // so we check for that here.
         if (!qualTypeIsBoolean(field_qt) and isBoolRes(init_expr)) {
-            const init_expr_qt = getExprQualType(init_expr);
-            init_expr = try transCCast(c, scope, loc, field_qt, init_expr_qt, init_expr);
+            const elem_expr_qt = getExprQualType(c, elem_expr);
+            init_expr = try transCCast(c, scope, loc, field_qt, elem_expr_qt, init_expr);
         }
 
         if (init_expr.tag() == .string_literal and qualTypeIsCharStar(field_qt)) {
