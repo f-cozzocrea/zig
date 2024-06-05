@@ -563,8 +563,86 @@ fn transFnDecl(c: *Context, fn_decl: NodeIndex) Error!void {
     return addTopLevelDecl(c, fn_name, proto_node);
 }
 
-fn transVarDecl(_: *Context, _: NodeIndex, _: ?usize) Error!void {
-    @panic("TODO");
+fn transVarDecl(c: *Context, scope: *Scope, var_node: NodeIndex) Error!void {
+    //const var_decl = @as(*const clang.vardecl, @ptrcast(decl));
+    //const decl_init = var_decl.getinit();
+    //const loc = decl.getlocation();
+
+    const node_types = c.tree.nodes.items(.ty);
+    const node_tags = c.tree.nodes.items(.tag);
+    const var_tag = node_tags[@intFromEnum(var_node)];
+    const raw_var_ty = node_types[@intFromEnum(var_node)];
+
+    //const qual_type = var_decl.gettypesourceinfo_gettype();
+    //const name = try c.str(@as(*const clang.nameddecl, @ptrcast(var_decl)).getname_bytes_begin());
+    //const mangled_name = try block_scope.makemangledname(c, name);
+
+    const qual_type = raw_var_ty.canonicalize(.preserve_quals);
+    const name = c.mapper.lookup();
+    
+    if (var_decl.getstorageclass() == .extern) {
+        // this is actually a global variable, put it in the global scope and reference it.
+        // `_ = mangled_name;`
+        return visitvardecl(c, var_decl, mangled_name);
+    } else if (qualtypewasdemotedtoopaque(c, qual_type)) {
+        return fail(c, error.unsupportedtranslation, loc, "local variable has opaque type", .{});
+    } 
+
+    const is_static_local = var_decl.isstaticlocal();
+    const is_const = qual_type.isconstqualified();
+    const type_node = try transqualtypemaybeinitialized(c, scope, qual_type, decl_init, loc);
+
+    var init_node = if (decl_init) |expr|
+        if (expr.getstmtclass() == .stringliteralclass)
+            try transstringliteralinitializer(c, @as(*const clang.stringliteral, @ptrcast(expr)), type_node)
+        else
+            try transexprcoercing(c, scope, expr, .used)
+    else if (is_static_local)
+        try tag.std_mem_zeroes.create(c.arena, type_node)
+    else
+        tag.undefined_literal.init();
+    if (!qualtypeisboolean(qual_type) and isboolres(init_node)) {
+        init_node = try tag.int_from_bool.create(c.arena, init_node);
+    } else if (init_node.tag() == .string_literal and qualtypeischarstar(qual_type)) {
+        const dst_type_node = try transqualtype(c, scope, qual_type, loc);
+        init_node = try removecvqualifiers(c, dst_type_node, init_node);
+    }
+
+    const var_name: []const u8 = if (is_static_local) scope.block.static_inner_name else mangled_name;
+    var node = try tag.var_decl.create(c.arena, .{
+        .is_pub = false,
+        .is_const = is_const,
+        .is_extern = false,
+        .is_export = false,
+        .is_threadlocal = var_decl.gettlskind() != .none,
+        .linksection_string = null,
+        .alignment = clangalignment.forvar(c, var_decl).zigalignment(),
+        .name = var_name,
+        .type = type_node,
+        .init = init_node,
+    });
+    if (is_static_local) {
+        node = try tag.static_local_var.create(c.arena, .{ .name = mangled_name, .init = node });
+    }
+    try block_scope.statements.append(node);
+    try block_scope.discardvariable(c, mangled_name);
+
+    const cleanup_attr = var_decl.getcleanupattribute();
+    if (cleanup_attr) |fn_decl| {
+        const cleanup_fn_name = try c.str(@as(*const clang.nameddecl, @ptrcast(fn_decl)).getname_bytes_begin());
+        const fn_id = try tag.identifier.create(c.arena, cleanup_fn_name);
+
+        const varname = try tag.identifier.create(c.arena, mangled_name);
+        const args = try c.arena.alloc(node, 1);
+        args[0] = try tag.address_of.create(c.arena, varname);
+
+        const cleanup_call = try tag.call.create(c.arena, .{ .lhs = fn_id, .args = args });
+        const discard = try tag.discard.create(c.arena, .{ .should_skip = false, .value = cleanup_call });
+        const deferred_cleanup = try tag.@"defer".create(c.arena, discard);
+
+        try block_scope.statements.append(deferred_cleanup);
+    }
+
 }
 
 fn transEnumDecl(c: *Context, scope: *Scope, enum_decl: NodeIndex, field_nodes: []const NodeIndex) Error!void {
