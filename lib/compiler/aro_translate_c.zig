@@ -78,6 +78,23 @@ fn addTopLevelDecl(c: *Context, name: []const u8, decl_node: ZigNode) !void {
     }
 }
 
+fn warn(c: *Context, scope: *Scope, loc: TokenIndex, comptime format: []const u8, args: anytype) !void {
+    const str = try c.locStr(loc);
+    const value = try std.fmt.allocPrint(c.arena, "// {s}: warning: " ++ format, .{str} ++ args);
+    try scope.appendNode(try ZigTag.warning.create(c.arena, value));
+}
+
+fn fail(
+    c: *Context,
+    err: anytype,
+    source_loc: TokenIndex,
+    comptime format: []const u8,
+    args: anytype,
+) (@TypeOf(err) || error{OutOfMemory}) {
+    try warn(c, &c.global_scope.base, source_loc, format, args);
+    return err;
+}
+
 fn failDecl(c: *Context, loc: TokenIndex, name: []const u8, comptime format: []const u8, args: anytype) Error!void {
     // location
     // pub const name = @compileError(msg);
@@ -86,12 +103,6 @@ fn failDecl(c: *Context, loc: TokenIndex, name: []const u8, comptime format: []c
     const str = try c.locStr(loc);
     const location_comment = try std.fmt.allocPrint(c.arena, "// {s}", .{str});
     try c.global_scope.nodes.append(try ZigTag.warning.create(c.arena, location_comment));
-}
-
-fn warn(c: *Context, scope: *Scope, loc: TokenIndex, comptime format: []const u8, args: anytype) !void {
-    const str = try c.locStr(loc);
-    const value = try std.fmt.allocPrint(c.arena, "// {s}: warning: " ++ format, .{str} ++ args);
-    try scope.appendNode(try ZigTag.warning.create(c.arena, value));
 }
 
 pub fn translate(
@@ -302,7 +313,7 @@ fn transDecl(c: *Context, scope: *Scope, decl: NodeIndex) !void {
         .threadlocal_extern_var,
         .threadlocal_static_var,
         => {
-            try transVarDecl(c, decl, null);
+            try transVarDecl(c, scope, decl);
         },
         else => unreachable,
     }
@@ -563,86 +574,103 @@ fn transFnDecl(c: *Context, fn_decl: NodeIndex) Error!void {
     return addTopLevelDecl(c, fn_name, proto_node);
 }
 
+/// if mangled_name is not null, this var decl was declared in a block scope.
+fn visitVarDecl(_: *Context, _: *Scope, _: NodeIndex, _: ?[]const u8) Error!void {
+    @panic("TODO");
+}
+
 fn transVarDecl(c: *Context, scope: *Scope, var_node: NodeIndex) Error!void {
-    //const var_decl = @as(*const clang.vardecl, @ptrcast(decl));
-    //const decl_init = var_decl.getinit();
-    //const loc = decl.getlocation();
+    const var_tag = c.tree.nodes.items(.tag)[@intFromEnum(var_node)];
+    const var_type = c.tree.nodes.items(.ty)[@intFromEnum(var_node)];
+    const var_data = c.tree.nodes.items(.data)[@intFromEnum(var_node)];
+    const loc = 0; // TODO
 
-    const node_types = c.tree.nodes.items(.ty);
-    const node_tags = c.tree.nodes.items(.tag);
-    const var_tag = node_tags[@intFromEnum(var_node)];
-    const raw_var_ty = node_types[@intFromEnum(var_node)];
+    const qual_type = var_type.canonicalize(.preserve_quals);
+    _ = qual_type;
+    const name = c.tree.tokSlice(c.tree.tokSlice(var_data.decl.name));
+    const mangled_name = try scope.makemangledname(c, name);
 
-    //const qual_type = var_decl.gettypesourceinfo_gettype();
-    //const name = try c.str(@as(*const clang.nameddecl, @ptrcast(var_decl)).getname_bytes_begin());
-    //const mangled_name = try block_scope.makemangledname(c, name);
+    var is_extern = false;
+    var is_static_local = false;
+    switch (var_tag) {
+        .extern_var,
+        .threadlocal_extern_var,
+        => {
+            is_extern = true;
+        },
 
-    const qual_type = raw_var_ty.canonicalize(.preserve_quals);
-    const name = c.mapper.lookup();
-    
-    if (var_decl.getstorageclass() == .extern) {
+        // FIXME: Is this accurate? Thread local and local to function aren't
+        // equivalent. aro may have a different property for function locality.
+        .threadlocal_static_var => {
+            is_static_local = true;
+        },
+        else => {},
+    }
+
+    if (is_extern) {
         // this is actually a global variable, put it in the global scope and reference it.
         // `_ = mangled_name;`
-        return visitvardecl(c, var_decl, mangled_name);
-    } else if (qualtypewasdemotedtoopaque(c, qual_type)) {
-        return fail(c, error.unsupportedtranslation, loc, "local variable has opaque type", .{});
-    } 
-
-    const is_static_local = var_decl.isstaticlocal();
-    const is_const = qual_type.isconstqualified();
-    const type_node = try transqualtypemaybeinitialized(c, scope, qual_type, decl_init, loc);
-
-    var init_node = if (decl_init) |expr|
-        if (expr.getstmtclass() == .stringliteralclass)
-            try transstringliteralinitializer(c, @as(*const clang.stringliteral, @ptrcast(expr)), type_node)
-        else
-            try transexprcoercing(c, scope, expr, .used)
-    else if (is_static_local)
-        try tag.std_mem_zeroes.create(c.arena, type_node)
-    else
-        tag.undefined_literal.init();
-    if (!qualtypeisboolean(qual_type) and isboolres(init_node)) {
-        init_node = try tag.int_from_bool.create(c.arena, init_node);
-    } else if (init_node.tag() == .string_literal and qualtypeischarstar(qual_type)) {
-        const dst_type_node = try transqualtype(c, scope, qual_type, loc);
-        init_node = try removecvqualifiers(c, dst_type_node, init_node);
+        return visitVarDecl(c, var_node, mangled_name);
+    } else if (qualTypeWasDemotedToOpaque(c, var_type)) {
+        return fail(c, error.UnsupportedTranslation, loc, "local variable has opaque type", .{});
     }
 
-    const var_name: []const u8 = if (is_static_local) scope.block.static_inner_name else mangled_name;
-    var node = try tag.var_decl.create(c.arena, .{
-        .is_pub = false,
-        .is_const = is_const,
-        .is_extern = false,
-        .is_export = false,
-        .is_threadlocal = var_decl.gettlskind() != .none,
-        .linksection_string = null,
-        .alignment = clangalignment.forvar(c, var_decl).zigalignment(),
-        .name = var_name,
-        .type = type_node,
-        .init = init_node,
-    });
-    if (is_static_local) {
-        node = try tag.static_local_var.create(c.arena, .{ .name = mangled_name, .init = node });
-    }
-    try block_scope.statements.append(node);
-    try block_scope.discardvariable(c, mangled_name);
+    //const is_const = qual_type.isConstQualified();
+    //const type_node = try transQualTypeMaybeInitialized(c, scope, qual_type, decl_init, loc);
 
-    const cleanup_attr = var_decl.getcleanupattribute();
-    if (cleanup_attr) |fn_decl| {
-        const cleanup_fn_name = try c.str(@as(*const clang.nameddecl, @ptrcast(fn_decl)).getname_bytes_begin());
-        const fn_id = try tag.identifier.create(c.arena, cleanup_fn_name);
+    const is_const = var_type.isConst();
+    _ = is_const;
 
-        const varname = try tag.identifier.create(c.arena, mangled_name);
-        const args = try c.arena.alloc(node, 1);
-        args[0] = try tag.address_of.create(c.arena, varname);
+    //var init_node = if (decl_init) |expr|
+    //    if (expr.getStmtClass() == .StringLiteralClass)
+    //        try transStringLiteralInitializer(c, @as(*const clang.StringLiteral, @ptrCast(expr)), type_node)
+    //    else
+    //        try transExprCoercing(c, scope, expr, .used)
+    //else if (is_static_local)
+    //    try Tag.std_mem_zeroes.create(c.arena, type_node)
+    //else
+    //    Tag.undefined_literal.init();
+    //if (!qualTypeIsBoolean(qual_type) and isBoolRes(init_node)) {
+    //    init_node = try Tag.int_from_bool.create(c.arena, init_node);
+    //} else if (init_node.tag() == .string_literal and qualTypeIsCharStar(qual_type)) {
+    //    const dst_type_node = try transQualType(c, scope, qual_type, loc);
+    //    init_node = try removeCVQualifiers(c, dst_type_node, init_node);
+    //}
 
-        const cleanup_call = try tag.call.create(c.arena, .{ .lhs = fn_id, .args = args });
-        const discard = try tag.discard.create(c.arena, .{ .should_skip = false, .value = cleanup_call });
-        const deferred_cleanup = try tag.@"defer".create(c.arena, discard);
+    //const var_name: []const u8 = if (is_static_local) Scope.Block.static_inner_name else mangled_name;
+    //var node = try Tag.var_decl.create(c.arena, .{
+    //    .is_pub = false,
+    //    .is_const = is_const,
+    //    .is_extern = false,
+    //    .is_export = false,
+    //    .is_threadlocal = var_decl.getTLSKind() != .None,
+    //    .linksection_string = null,
+    //    .alignment = ClangAlignment.forVar(c, var_decl).zigAlignment(),
+    //    .name = var_name,
+    //    .type = type_node,
+    //    .init = init_node,
+    //});
+    //if (is_static_local) {
+    //    node = try Tag.static_local_var.create(c.arena, .{ .name = mangled_name, .init = node });
+    //}
+    //try block_scope.statements.append(node);
+    //try block_scope.discardVariable(c, mangled_name);
 
-        try block_scope.statements.append(deferred_cleanup);
-    }
+    //const cleanup_attr = var_decl.getCleanupAttribute();
+    //if (cleanup_attr) |fn_decl| {
+    //    const cleanup_fn_name = try c.str(@as(*const clang.NamedDecl, @ptrCast(fn_decl)).getName_bytes_begin());
+    //    const fn_id = try Tag.identifier.create(c.arena, cleanup_fn_name);
 
+    //    const varname = try Tag.identifier.create(c.arena, mangled_name);
+    //    const args = try c.arena.alloc(Node, 1);
+    //    args[0] = try Tag.address_of.create(c.arena, varname);
+
+    //    const cleanup_call = try Tag.call.create(c.arena, .{ .lhs = fn_id, .args = args });
+    //    const discard = try Tag.discard.create(c.arena, .{ .should_skip = false, .value = cleanup_call });
+    //    const deferred_cleanup = try Tag.@"defer".create(c.arena, discard);
+
+    //    try block_scope.statements.append(deferred_cleanup);
+    //}
 }
 
 fn transEnumDecl(c: *Context, scope: *Scope, enum_decl: NodeIndex, field_nodes: []const NodeIndex) Error!void {
@@ -1065,6 +1093,10 @@ fn transCreateNodeAPInt(c: *Context, int: aro.Value) !ZigNode {
     const res = try ZigTag.integer_literal.create(c.arena, str);
     if (is_negative) return ZigTag.negate.create(c.arena, res);
     return res;
+}
+
+fn qualTypeWasDemotedToOpaque(_: *Context, _: Type) bool {
+    @panic("TODO");
 }
 
 pub const PatternList = struct {
