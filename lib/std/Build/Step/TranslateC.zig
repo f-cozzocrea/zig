@@ -8,9 +8,10 @@ const TranslateC = @This();
 pub const base_id: Step.Id = .translate_c;
 
 step: Step,
-source: std.Build.LazyPath,
+source: std.Build.Module.CSourceFile,
 include_dirs: std.ArrayList([]const u8),
 c_macros: std.ArrayList([]const u8),
+c_flags: std.ArrayList([]const u8),
 out_basename: []const u8,
 target: std.Build.ResolvedTarget,
 optimize: std.builtin.OptimizeMode,
@@ -19,7 +20,7 @@ link_libc: bool,
 use_clang: bool,
 
 pub const Options = struct {
-    root_source_file: std.Build.LazyPath,
+    root_source_file: std.Build.Module.CSourceFile,
     target: std.Build.ResolvedTarget,
     optimize: std.builtin.OptimizeMode,
     link_libc: bool = true,
@@ -46,7 +47,7 @@ pub fn create(owner: *std.Build, options: Options) *TranslateC {
         .link_libc = options.link_libc,
         .use_clang = options.use_clang,
     };
-    source.addStepDependencies(&translate_c.step);
+    source.file.addStepDependencies(&translate_c.step);
     return translate_c;
 }
 
@@ -152,7 +153,13 @@ fn make(step: *Step, prog_node: std.Progress.Node) !void {
         try argv_list.append(c_macro);
     }
 
-    try argv_list.append(translate_c.source.getPath2(b, step));
+    try argv_list.append("-cflags");
+    for (translate_c.source.flags) |flag| {
+        try argv_list.append(flag);
+    }
+    try argv_list.append("--");
+
+    try argv_list.append(translate_c.source.file.getPath2(b, step));
 
     const output_path = try step.evalZigProcess(argv_list.items, prog_node);
 
