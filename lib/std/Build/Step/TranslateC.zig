@@ -11,7 +11,6 @@ step: Step,
 source: std.Build.Module.CSourceFile,
 include_dirs: std.ArrayList([]const u8),
 c_macros: std.ArrayList([]const u8),
-c_flags: std.ArrayList([]const u8),
 out_basename: []const u8,
 target: std.Build.ResolvedTarget,
 optimize: std.builtin.OptimizeMode,
@@ -20,7 +19,7 @@ link_libc: bool,
 use_clang: bool,
 
 pub const Options = struct {
-    root_source_file: std.Build.Module.CSourceFile,
+    source: std.Build.Module.CSourceFile,
     target: std.Build.ResolvedTarget,
     optimize: std.builtin.OptimizeMode,
     link_libc: bool = true,
@@ -29,7 +28,7 @@ pub const Options = struct {
 
 pub fn create(owner: *std.Build, options: Options) *TranslateC {
     const translate_c = owner.allocator.create(TranslateC) catch @panic("OOM");
-    const source = options.root_source_file.dupe(owner);
+    const source = options.source.dupe(owner);
     translate_c.* = TranslateC{
         .step = Step.init(.{
             .id = base_id,

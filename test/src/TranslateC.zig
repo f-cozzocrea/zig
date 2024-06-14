@@ -98,7 +98,9 @@ pub fn addCase(self: *TranslateCContext, case: *const TestCase) void {
     }
 
     const translate_c = b.addTranslateC(.{
-        .root_source_file = write_src.files.items[0].getPath(),
+        .source = .{
+            .file = write_src.files.items[0].getPath(),
+        },
         .target = b.resolveTargetQuery(case.target),
         .optimize = .Debug,
     });

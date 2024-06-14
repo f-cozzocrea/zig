@@ -574,7 +574,10 @@ pub fn lowerToTranslateCSteps(
             const file_source = write_src.add("tmp.c", case.input);
 
             const translate_c = b.addTranslateC(.{
-                .root_source_file = file_source,
+                .source = .{
+                    .file = file_source,
+                    .flags = &.{},
+                },
                 .optimize = .Debug,
                 .target = case.target,
                 .link_libc = case.link_libc,
@@ -603,7 +606,10 @@ pub fn lowerToTranslateCSteps(
             const file_source = write_src.add("tmp.c", case.input);
 
             const translate_c = b.addTranslateC(.{
-                .root_source_file = file_source,
+                .source = .{
+                    .file = file_source,
+                    .flags = &.{},
+                },
                 .optimize = .Debug,
                 .target = case.target,
                 .link_libc = case.link_libc,
